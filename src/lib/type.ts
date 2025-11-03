@@ -3,7 +3,7 @@ export type StartupLite = {
   name: string;
   city: string;
   industry: string;
-  trl: string;          // e.g. "TRL 6"
+  trl: string;          
   website?: string;
 };
 
@@ -21,7 +21,7 @@ export type AppSection = {
 };
 
 export type StartupApplication = {
-  slug: string;              // challenge slug: face-liveness, contactless-fingerprint, etc.
+  slug: string;              
   startup: StartupLite;
   summary?: string;
   sections: AppSection[];

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
     
 export default function ProfilePage() {
   const router = useRouter();
-  // Replace with real auth data later
+  
   const evaluator = {
     name: 'Evaluator Name',
     email: 'evaluator@example.com',
@@ -17,16 +17,16 @@ export default function ProfilePage() {
   };
   
   const handleSignOut = () => {
-    // Clear session data (if any)
+    
     try {
-      localStorage.removeItem('token'); // optional if you use localStorage auth
+      localStorage.removeItem('token'); 
       sessionStorage.clear();
     } catch (err) {
       console.error(err);
     }
 
-    // Redirect to login
-    router.replace('/login'); // ✅ takes user to login page
+    
+    router.replace('/login'); 
   };
 
 
@@ -47,7 +47,7 @@ export default function ProfilePage() {
               <Field label="Last Login" value={new Date(evaluator.lastLogin).toUTCString()} />
             </div>
 
-            {/* Optional actions row */}
+            {/* actions row */}
             <div className="mt-6 flex gap-3">
               <button className="btn btn-outline">Change Password</button>
               <button

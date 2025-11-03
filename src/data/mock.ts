@@ -73,14 +73,14 @@ export const reviewCriteria: CriterionGroup[] = [
 ]
 // --- My Reviews (assigned & completed) ----------------------
 export type ReviewItem = {
-  id: string;                 // startup id you already use in /review/[id]
+  id: string;                
   challengeSlug: string;
   challenge: string;
   startup: string;
   stage: string;
-  assignedOn: string;         // ISO date
+  assignedOn: string;         
   status: "Assigned" | "In Progress" | "Submitted" | "Scored";
-  score?: number;             // present for completed items
+  score?: number;             
 };
 
 export const myAssignedReviews: ReviewItem[] = [

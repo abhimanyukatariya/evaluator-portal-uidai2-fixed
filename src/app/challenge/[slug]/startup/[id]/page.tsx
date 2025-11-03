@@ -22,7 +22,6 @@ function nice(label: string) {
     .trim();
 }
 
-// Some common keys your API uses (based on your curl output)
 const OVERVIEW_KEYS = [
   { key: "companyname", label: "Company" },
   { key: "cityc", label: "Location" },
@@ -35,7 +34,7 @@ const OVERVIEW_KEYS = [
 
 const CONTACT_KEYS = [
   { key: "emailm", label: "Email" },
-  { key: "websitem", label: "Website" }, // sometimes the API uses 'website' or 'websitem'
+  { key: "websitem", label: "Website" }, 
   { key: "website", label: "Website (alt)" },
   { key: "phone", label: "Phone" },
 ];
@@ -48,7 +47,7 @@ const SOCIAL_KEYS = [
   { key: "youtube", label: "YouTube" },
 ];
 
-// File uploads (exact keys from your payload; keep adding here as needed)
+
 const FILE_KEYS = [
   {
     key: "Upload the research solution document (technical details).",
@@ -70,12 +69,12 @@ const FILE_KEYS = [
     key: "Upload your challenge proposal document.",
     label: "Proposal (PDF)",
   },
-  // image keys observed in curl:
+  
   { key: "path", label: "Company/Logo Image" },
   { key: "url", label: "Landing Image" },
 ];
 
-// Long answer / descriptive questions (text)
+
 const LONG_ANSWER_KEYS = [
   { key: "Describe the innovation in your proposed solution", label: "Innovation" },
   {
@@ -119,11 +118,11 @@ export default async function ApplicationPage({
 }: {
   params: { slug: string; id: string };
 }) {
-  // Fetch the full application by ID from your Admin API
+  
   let app: any | null = null;
   try {
     const res = await getApplicationById(params.id);
-    // your detail endpoint may return { result: {...} } or { results: [{...}] }
+    
     if (res && typeof res === "object") {
       if ("result" in res) app = (res as any).result;
       else if ("results" in res && Array.isArray((res as any).results)) {
@@ -133,11 +132,11 @@ export default async function ApplicationPage({
       }
     }
   } catch (e) {
-    // swallow and show skeleton below
+    
     console.error("[review] getApplicationById failed:", e);
   }
 
-  // handy helpers for pulling values regardless of exact key spelling
+  
   const get = (k: string) => (app ? app[k] : null);
   const firstNonEmpty = (...ks: string[]) => {
     for (const k of ks) {

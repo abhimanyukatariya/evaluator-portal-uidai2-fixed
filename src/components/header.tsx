@@ -9,11 +9,11 @@ export default function Header() {
   const router = useRouter();
 
   const handleLogout = () => {
-    // put your real logout here (clear auth cookie/JWT, call /api/logout, etc.)
+    
     try {
       localStorage.removeItem('token');
     } catch {}
-    router.replace('/'); // or '/login'
+    router.replace('/'); 
   };
 
   return (

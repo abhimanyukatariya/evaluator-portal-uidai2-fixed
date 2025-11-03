@@ -4,16 +4,16 @@ const TOKEN = process.env.EVALUATOR_BEARER_TOKEN!;
 
 type AnyJson = any;
 
-/** Return a guaranteed array of rows from whatever the backend sends */
+
 function normalizeRows(payload: AnyJson): AnyJson[] {
   if (Array.isArray(payload)) return payload;
   if (payload == null) return [];
   if (Array.isArray(payload.data)) return payload.data;
   if (Array.isArray(payload.items)) return payload.items;
   if (Array.isArray(payload.results)) return payload.results;
-  // some APIs nest deeper: {data:{items:[...]}}
+  
   if (payload.data && Array.isArray(payload.data.items)) return payload.data.items;
-  // fallback: single object -> wrap in array
+  
   if (typeof payload === "object") return [payload];
   return [];
 }

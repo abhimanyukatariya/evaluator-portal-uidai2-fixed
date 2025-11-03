@@ -34,7 +34,7 @@ export default function Sidebar() {
             </Link>
 
             <Link
-              href="/evaluations" // <-- route for "My Reviews" page
+              href="/evaluations" 
               className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50"
             >
               <ClipboardList size={18} />

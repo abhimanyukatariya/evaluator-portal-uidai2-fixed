@@ -9,7 +9,7 @@ type Slide = { src: string; alt: string; href?: string };
 type Props = {
   slides: Slide[];
   intervalMs?: number;
-  fullBleed?: boolean; // set true only for edge-to-edge elsewhere
+  fullBleed?: boolean; 
 };
 
 export default function BannerCarousel({
@@ -19,7 +19,7 @@ export default function BannerCarousel({
 }: Props) {
   const [index, setIndex] = useState(0);
 
-  // ✅ Correct setTimeout typing (browser)
+  
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoveringRef = useRef(false);
 
@@ -28,25 +28,25 @@ export default function BannerCarousel({
   const prev = () => go(index - 1);
 
   useEffect(() => {
-    if (hoveringRef.current) return; // just exit; don't return a non-function
+    if (hoveringRef.current) return; 
 
-    // clear any existing timer
+    
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
 
-    // set the next timer
+    
     timerRef.current = setTimeout(next, intervalMs);
 
-    // ✅ always return a cleanup function (never a number/null)
+    
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [index, intervalMs, slides.length]);
 
   return (
@@ -55,7 +55,7 @@ export default function BannerCarousel({
       <div
   className="relative w-full overflow-hidden rounded-2xl shadow-lg isolate"
   style={{
-    aspectRatio: '1600 / 620', // tighter, perfect desktop fit (16:6 ratio)
+    aspectRatio: '1600 / 620', 
     height: 'auto',
   }}
   onMouseEnter={() => {

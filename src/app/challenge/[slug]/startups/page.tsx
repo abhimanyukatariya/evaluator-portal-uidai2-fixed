@@ -3,19 +3,19 @@ import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import Link from "next/link";
 import { formatUTCDate } from "@/utils/date";
-// …imports above…
+
 import { listApplications } from "@/lib/admin_api";
 
 type Params = { params: { slug: string } };
 
-// Map challenge slug -> round id (or just keep using process.env.EVALUATOR_ROUND_ID)
+
 const ROUND_ID_MAP: Record<string, string | undefined> = {
   "face-liveness": process.env.EVALUATOR_ROUND_ID,
   "contactless-fingerprint": process.env.ROUND_CONTACTLESS_FINGERPRINT_ID,
   "presentation-attack": process.env.ROUND_PRESENTATION_ATTACK_ID,
 };
 
-// The API sends many variant keys. Normalize to a thin view-model the table expects.
+
 type ApiRow = Record<string, any>;
 type VmRow = {
   id: string | undefined;
@@ -32,30 +32,30 @@ function pick<T = string>(...vals: any[]): T | "" {
 
 function normalizeRows(arr: ApiRow[]): VmRow[] {
   return arr.map((r) => {
-    // id: prefer startup_id, then id, then user_id
+    
     const id = pick<string>(r.startup_id, r.id, r.user_id);
 
-    // name/company: your payload showed "companyname" and also lots of other variants
+    
     const name = pick<string>(
       r.startup_name,
-      r.companyname,      // <— from your curl
+      r.companyname,      
       r.company_name,
       r.companyName,
       r.name,
-      r.namew,            // (if any)
+      r.namew,            
       r.startup,
     ) || "—";
 
-    // location: you had "cityc" and maybe "statec"
+    
     const location = pick<string>(
       r.location,
       r.city,
-      r.cityc,            // <— from your curl
+      r.cityc,            
       r.statec,
       r.state
     ) || "—";
 
-    // stage & status: your payload had "progress_state" (e.g., IN_ROUNDS)
+    
     const stage = pick<string>(r.stage, r.stagec) || "—";
     const status = pick<string>(r.status, r.progress_state) || "—";
 
@@ -67,7 +67,7 @@ export default async function StartupsPage({ params }: Params) {
   const roundId =
     ROUND_ID_MAP[params.slug] ??
     process.env.EVALUATOR_ROUND_ID ??
-    ""; // fallback if you prefer a single env
+    ""; 
 
   let rows: VmRow[] = [];
 
@@ -76,7 +76,7 @@ export default async function StartupsPage({ params }: Params) {
       console.warn("[startups] No round id available for:", params.slug);
     } else {
       const raw = await listApplications(roundId);
-      // raw is whatever your API returned (json.results)
+      
       rows = normalizeRows(Array.isArray(raw) ? raw : []);
     }
   } catch (err) {
@@ -85,8 +85,8 @@ export default async function StartupsPage({ params }: Params) {
 
   return (
     <main className="min-h-screen">
-      {/* Header + Sidebar left as you had them */}
-      {/* … */}
+      {}
+      {}
 
       <section className="flex-1 space-y-6">
         {/* Title + Back */}
@@ -114,8 +114,7 @@ export default async function StartupsPage({ params }: Params) {
               ) : (
                 rows.map((s, i) => {
                   const displayId = s.id;
-                  // If you already have a detail route wired to real API, point this there.
-                  // For now, keep your existing review route:
+                  
                   const reviewHref =
                     (`/challenge/${params.slug}/startup/${encodeURIComponent(displayId ?? "")}` as
                       `/challenge/${string}/startup/${string}`);

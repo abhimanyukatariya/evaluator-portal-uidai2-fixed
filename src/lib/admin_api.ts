@@ -2,7 +2,7 @@
 const BASE = process.env.ADMIN_API_BASE!;
 const TOKEN = process.env.EVALUATOR_BEARER_TOKEN!;
 
-// NOTE: this file is server-only
+
 export async function listApplications(roundId: string) {
   if (!BASE) throw new Error("[admin_api] Missing ADMIN_API_BASE");
   if (!TOKEN) {
@@ -13,7 +13,7 @@ export async function listApplications(roundId: string) {
   const url = `${BASE}/api/evaluator/applications?round_id=${encodeURIComponent(roundId)}`;
 
   const res = await fetch(url, {
-    // only one of these; use no-store in dev so you always see fresh data
+    
     cache: "no-store",
     headers: {
       Accept: "application/json",
@@ -28,12 +28,12 @@ export async function listApplications(roundId: string) {
   }
 
   const json = await res.json().catch(() => ({} as any));
-  // API shape from your curl: { results: [ { ... } ], ... }
+  
   const rows = Array.isArray(json?.results) ? json.results : (Array.isArray(json) ? json : []);
   return rows;
 }
 
-// --- get a single application by its id (server-side only) ---
+
 export async function getApplicationById(id: string) {
   const base = process.env.ADMIN_API_BASE;
   const token = process.env.EVALUATOR_BEARER_TOKEN;
@@ -60,7 +60,6 @@ export async function getApplicationById(id: string) {
   }
 
   // The API returns a JSON object for a single application
-  // (your curl showed raw key/value pairs)
   const data = await res.json();
   return data as Record<string, unknown>;
 }

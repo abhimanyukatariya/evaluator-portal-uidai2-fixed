@@ -26,7 +26,7 @@ export default function BannerCarousel({
   const go = (i: number) => setIndex((p) => (i + slides.length) % slides.length);
   const next = () => go(index + 1);
   const prev = () => go(index - 1);
-
+  
   useEffect(() => {
     if (hoveringRef.current) return; 
 

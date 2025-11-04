@@ -1,30 +1,68 @@
-import Link from "next/link"
-import Header from "@/components/header"
-export default function LoginPage(){
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("padevaluator@yopmail.com");
+  const [password, setPassword] = useState("Msh@1234");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "Login failed");
+      }
+
+      // Cookie is already set by the server → just go to landing
+      router.replace("/landing");
+    } catch (err: any) {
+      setError(err?.message || "Login error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <main className="min-h-screen">
-      <Header/>
-      <section className="container-max mt-12 grid md:grid-cols-2 gap-8 items-center">
-        <div className="glass rounded-2xl p-8">
-          <h1 className="text-3xl font-semibold">Evaluator Login</h1>
-          <p className="text-slate-600 mt-2">Use your email and password to continue.</p>
-          <form className="mt-6 space-y-4">
-            <input className="w-full px-4 py-3 rounded-xl border" placeholder="Work email" />
-            <input className="w-full px-4 py-3 rounded-xl border" type="password" placeholder="Password" />
-            <button className="w-full px-5 py-3 rounded-xl bg-mshBlue text-white font-medium hover:opacity-90">Login</button>
-          </form>
-          <p className="text-xs text-slate-500 mt-3">TESTING</p>
-          <div className="mt-6"><Link href="/landing" className="text-sm underline">Skip to Landing</Link></div>
-        </div>
-        <div className="rounded-2xl p-8 glass">
-          <h2 className="text-xl font-semibold"></h2>
-          <ul className="mt-3 list-disc pl-5 text-slate-700 space-y-1">
-            <li>Bullet Point1</li>
-            <li>Bullet Point2</li>
-            <li>Bullet Point3</li>
-          </ul>
-        </div>
-      </section>
+    <main className="min-h-screen flex items-center justify-center">
+      <form onSubmit={onSubmit} className="card p-6 w-full max-w-md space-y-4">
+        <h1 className="text-xl font-semibold">Evaluator login</h1>
+
+        <input
+          className="input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+        />
+        <input
+          className="input"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          required
+        />
+
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+
+        <button className="btn btn-primary w-full" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
+      </form>
     </main>
-  )
+  );
 }

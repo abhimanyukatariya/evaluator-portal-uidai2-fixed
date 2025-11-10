@@ -14,7 +14,7 @@ export default function Sidebar() {
               className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50"
             >
               <Home size={18} />
-              <span>Landing</span>
+              <span>Home Page</span>
             </Link>
 
             <Link

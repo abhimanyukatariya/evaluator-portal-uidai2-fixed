@@ -1,66 +1,74 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+// src/app/login/page.tsx
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("padevaluator@yopmail.com");
-  const [password, setPassword] = useState("Msh@1234");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');      
+  const [password, setPassword] = useState(''); 
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
+    setErr(null);
+    setBusy(true);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('https://api.meity.gov.in/admin/admin/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || "Login failed");
-      }
-
-      // Cookie is already set by the server → just go to landing
-      router.replace("/landing");
-    } catch (err: any) {
-      setError(err?.message || "Login error");
+      const data = await res.json();
+      document.cookie = `auth_token=${data.token}; path=/; Secure; SameSite=None`;
+      if (!res.ok) throw new Error('Invalid credentials');
+      console.log('here after login');
+      router.replace('/landing');
+    } catch (e: any) {
+      setErr(e.message || 'Login failed');
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
-  }
-
+  };
   return (
-    <main className="min-h-screen flex items-center justify-center">
-      <form onSubmit={onSubmit} className="card p-6 w-full max-w-md space-y-4">
+    <main className="min-h-screen grid place-items-center">
+      <form
+        onSubmit={onSubmit}
+        className="card p-6 w-[520px] space-y-4"
+        autoComplete="off" 
+      >
         <h1 className="text-xl font-semibold">Evaluator login</h1>
 
         <input
-          className="input"
           type="email"
+          inputMode="email"
+          name="login_email"          
+          autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          placeholder="Email"
+          className="input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
           required
         />
+
         <input
-          className="input"
           type="password"
+          name="login_password"
+          autoComplete="new-password"  
+          placeholder="Password"
+          className="input"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
           required
         />
 
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {err && <p className="text-red-600 text-sm">{err}</p>}
 
-        <button className="btn btn-primary w-full" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+        <button className="btn btn-primary w-full" disabled={busy}>
+          {busy ? 'Logging in…' : 'Login'}
         </button>
       </form>
     </main>

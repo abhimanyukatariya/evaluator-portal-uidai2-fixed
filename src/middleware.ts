@@ -1,51 +1,58 @@
 // src/middleware.ts
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+// Everything here is public. Adjust as needed.
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/login",
+  "/favicon.ico",
+  "/icon",        // Next icon route
+  "/robots.txt",
+  "/sitemap.xml",
+  "/_next",       // Next.js internal assets
+  "/images",
+  "/fonts",
+];
+
+function isPublicPath(pathname: string) {
+  // Exact match or prefix (e.g., "/_next/static/…")
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
+}
 
 export function middleware(req: NextRequest) {
-  const token = req.cookies.get("auth_token")?.value;
-  const isAuth = Boolean(token);
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
+  const token = req.cookies.get("auth_token")?.value ?? "";
 
-  const isLogin = pathname.startsWith("/login");
-  const isRoot = pathname === "/";
-  const protectedPrefixes = [
-    "/landing",
-    "/challenge",
-    "/analytics",
-    "/history",
-    "/evaluations",
-    "/Profile",
-  ];
-  const isProtected = protectedPrefixes.some(p => pathname.startsWith(p));
-
-  // Hit root: decide where to go
-  if (isRoot) {
-    return NextResponse.redirect(new URL(isAuth ? "/landing" : "/login", req.url));
+  // 1) Allow all public paths
+  if (isPublicPath(pathname)) {
+    // If already logged in and hitting /login, push to /landing
+    if (pathname === "/login" && token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/landing";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
   }
 
-  // Already logged in but opening /login → push to landing
-  if (isAuth && isLogin) {
-    return NextResponse.redirect(new URL("/landing", req.url));
+  // 2) Everything else requires a cookie
+  if (!token) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    // preserve where the user was heading
+    url.searchParams.set("next", pathname + search);
+    return NextResponse.redirect(url);
   }
 
-  // Not logged in, trying to view protected pages → go to login
-  if (!isAuth && isProtected) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
+  // 3) Auth OK
   return NextResponse.next();
 }
 
+// Run on app routes and APIs, but skip static assets
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/landing",
-    "/challenge/:path*",
-    "/analytics",
-    "/history",
-    "/evaluations",
-    "/Profile",
+    // Exclude Next static/image files and common asset extensions
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map)).*)",
   ],
 };

@@ -1,51 +1,57 @@
 // src/lib/adminClient.ts
-import { cookies } from "next/headers";
+'use server';
+import 'server-only';
 
-const ADMIN_BASE = process.env.ADMIN_API_BASE || "http://13.233.29.114:8090";
-
-function getTokenFromCookies() {
-  const c = cookies();
-  const cookie = c.get("EVAL_TOKEN");
-  return cookie?.value ?? null;
-}
+const BASE =
+  process.env.ADMIN_API_BASE ?? 'https://api.meity.gov.in/admin';
 
 /**
- * Generic fetch to admin API with server cookie token
+ * Server-side fetch wrapper for the Admin API.
+ * - Tries to pick up the auth token from App Router cookies at runtime.
+ * - Falls back to EVALUATOR_BEARER_TOKEN (useful locally / during builds).
+ * - Never cached.
  */
-export async function adminFetch(path: string, opts: RequestInit = {}) {
-  const token = getTokenFromCookies();
-  const headers: Record<string,string> = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    ...(opts.headers as Record<string,string> || {}),
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+export async function adminFetch(
+  path: string,
+  init: RequestInit = {}
+) {
+  const url = path.startsWith('http') ? path : `${BASE}${path}`;
+  const headers = new Headers(init.headers as HeadersInit);
 
-  const res = await fetch(`${ADMIN_BASE}${path}`, {
-    ...opts,
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json');
+  if (init.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  // Try to read the cookie token only at runtime (App Router server).
+  let token: string | undefined;
+  try {
+    const mod = await import('next/headers'); // dynamic -> safe for pages build
+    token = mod.cookies().get('auth_token')?.value;
+  } catch {
+    // Not in App Router server (e.g. pages build / API route) – use env token
+    token = process.env.EVALUATOR_BEARER_TOKEN;
+  }
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const res = await fetch(url, {
+    ...init,
     headers,
-    // set cache policy to no-store for protected, dynamic data:
-    cache: "no-store"
+    cache: 'no-store',
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    const err = new Error(`Admin API ${res.status}: ${text}`);
-    // attach status for calling code
-    // @ts-ignore
-    err.status = res.status;
-    throw err;
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `[adminFetch] ${res.status} ${res.statusText} for ${url}: ${text}`
+    );
   }
-  return res.json();
-}
 
-/** convenience: list applications for a round */
-export async function listApplications(round_id: string) {
-  return adminFetch(`/api/evaluator/applications?round_id=${encodeURIComponent(round_id)}`);
-}
-
-
-/** convenience: get single application */
-export async function getApplication(applicationId: string) {
-  return adminFetch(`/api/applications/${encodeURIComponent(applicationId)}`);
+  try {
+    return await res.json();
+  } catch {
+    return {};
+  }
 }

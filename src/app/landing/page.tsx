@@ -43,7 +43,7 @@ export default function Landing(){
           </div>
 
           <div className="card p-6">
-            <h2 className="text-xl font-semibold">To Do</h2>
+            <h2 className="text-xl font-semibold">Challenges</h2>
             <div className="overflow-x-auto mt-4">
               <table className="table">
                 <thead>

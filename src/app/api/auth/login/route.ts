@@ -1,43 +1,41 @@
 // src/app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 
-const ADMIN_API_BASE = process.env.ADMIN_API_BASE ?? "http://13.233.29.114:8090";
+const ADMIN_API_BASE = process.env.ADMIN_API_BASE ?? "https://api.meity.gov.in/admin";
+
+const ADMIN_LOGIN_PATH = process.env.ADMIN_LOGIN_PATH ?? "/login";
+
 
 export async function POST(req: Request) {
-  const body = await req.json(); // { email, password }
+  const body = await req.json(); 
 
-  const upstream = await fetch(`${ADMIN_API_BASE}/api/admin/login`, {
+  const upstream = await fetch(`${ADMIN_API_BASE}${ADMIN_LOGIN_PATH}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
-  const data = await upstream.json().catch(() => ({} as any));
-
-  // Try the common token shapes your server may return
-  const token =
-    data?.token ||
-    data?.accessToken ||
-    data?.data?.token ||
-    data?.data?.accessToken;
-
-  if (!upstream.ok || !token) {
+  
+  if (!upstream.ok) {
+    const text = await upstream.text();
     return NextResponse.json(
-      { ok: false, error: data?.message || "Invalid credentials" },
+      { error: `Admin login failed (${upstream.status})`, details: text.slice(0, 300) },
       { status: 401 }
     );
   }
 
-  const res = NextResponse.json({ ok: true });
+  const data = await upstream.json().catch(() => ({} as any));
+  
+  const token =
+    data?.token ??
+    data?.access_token ??
+    data?.jwt ??
+    data?.data?.token ??
+    "";
 
-  // 7 days; secure in prod; lax is fine for this flow
-  res.cookies.set("auth_token", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
+  if (!token) {
+    return NextResponse.json({ error: "No token returned from server." }, { status: 401 });
+  }
 
-  return res;
+  return NextResponse.json({ token });
 }

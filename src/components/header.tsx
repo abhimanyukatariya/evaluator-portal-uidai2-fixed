@@ -6,10 +6,7 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 
 
-interface HeaderProps {
-  title?: string;
-  showBack?: boolean;
-}
+type HeaderProps = { title?: string; showBack?: boolean };
 
 export default function Header({ title, showBack }: HeaderProps) {
   const router = useRouter();
@@ -46,7 +43,7 @@ export default function Header({ title, showBack }: HeaderProps) {
         {/* Right section: Navigation */}
         <nav className="flex items-center gap-4">
           <Link href="/landing" className="text-sm hover:text-primary">
-            Landing
+            Home Page
           </Link>
           <Link href="/history" className="text-sm hover:text-primary">
             History
@@ -57,11 +54,7 @@ export default function Header({ title, showBack }: HeaderProps) {
           <Link href="/evaluations" className="text-sm hover:text-primary">
             My Reviews
           </Link>
-
-          <button className="p-2 rounded-lg hover:bg-slate-100" aria-label="Notifications">
-            <Bell size={18} />
-          </button>
-
+          
           <button
             onClick={handleLogout}
             className="p-2 rounded-lg hover:bg-slate-100"

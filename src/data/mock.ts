@@ -8,9 +8,9 @@ export const challenges = [
 ]
 
 export const todoItems = [
-  { id:1, challenge:'Face Liveness Detection', challengeSlug:'face-liveness', entity:'Startups', stage:'Proposal', status:'Proposal received' },
-  { id:2, challenge:'Contactless Fingerprint Authentication', challengeSlug:'contactless-fingerprint', entity:'Startups', stage:'Proposal', status:'Documents pending' },
-  { id:3, challenge:'Presentation Attack Detection', challengeSlug:'presentation-attack', entity:'Academia', stage:'Proposal', status:'Proposal received' },
+  { id:1, challenge:'Face Liveness Detection', challengeSlug:'face-liveness', entity:'Startups', stage:'Screening', status:'Proposal received' },
+  { id:2, challenge:'Contactless Fingerprint Authentication', challengeSlug:'contactless-fingerprint', entity:'Startups', stage:'Screening', status:'Proposal received' },
+  { id:3, challenge:'Presentation Attack Detection', challengeSlug:'presentation-attack', entity:'Academia', stage:'Screening', status:'Proposal received' },
 ]
 
 export const startups: Startup[] = [

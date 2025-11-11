@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { saveScores } from "@/lib/admin_api";
 
 type Props = {
@@ -22,7 +23,6 @@ function isUrl(val: unknown) {
 }
 
 function formatLabel(raw: string) {
-  // similar to your Angular helpers
   return raw
     .replace(/_/g, " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
@@ -31,14 +31,46 @@ function formatLabel(raw: string) {
 }
 
 export default function ApplicationView({ slug, app, criteria, evaluatorScores }: Props) {
+  const search = useSearchParams();
+
   const [isDownloading, setIsDownloading] = useState(false);
   const [scores, setScores] = useState<Record<string, { score?: string; comment?: string }>>({});
+
+  // -------- URL context (preserve cohort/round) --------
+  const edition_id = search.get("edition_id") ?? "";
+  const round_id = search.get("round_id") ?? "";
+
+  // -------- Resolve the application id reliably --------
+  const appIdFromData = String(
+    app?.id ?? app?.application_id ?? app?.startup_id ?? app?.user_id ?? ""
+  ).trim();
+
+  const appId = useMemo(() => {
+    if (appIdFromData) return appIdFromData;
+    if (typeof window === "undefined") return "";
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    return parts.at(-1) ?? "";
+  }, [appIdFromData]);
+
+  /*** >>> CHANGED: build a plain string href to the static /score page ***/
+  const scoringHrefObj = useMemo(() => {
+  // keep it simple: always target the static /score page
+  const query: Record<string, string> = {};
+  if (edition_id) query.edition_id = edition_id;
+  if (round_id)   query.round_id   = round_id;
+  if (appId)      query.application_id = appId;
+
+  return {
+    pathname: "/score" as const,   // <- typed route
+    query,
+  };
+}, [edition_id, round_id, appId]);
+  /*** <<< CHANGED ***/
 
   // ----------- normalize incoming data -----------
   const challengeName = app?.challenge_name ?? app?.challenge ?? "—";
 
   const companyProfile = app?.company_profile ?? {};
-  // vendor split: keys ending with "m" → management
   const { company, management } = useMemo(() => {
     const comp: Record<string, any> = {};
     const mgmt: Record<string, any> = {};
@@ -70,7 +102,9 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
   const step3 = app?.sections?.step3 ?? {};
   const step4 = app?.sections?.step4 ?? {};
 
-  const documents: Array<{ tag?: string; url?: string }> = Array.isArray(app?.documents) ? app.documents : [];
+  const documents: Array<{ tag?: string; url?: string }> = Array.isArray(app?.documents)
+    ? app.documents
+    : [];
 
   const companyImg =
     documents.find((d) => d.tag === "company")?.url ??
@@ -83,16 +117,18 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
     "/placeholder.svg";
 
   // very basic role check; tweak when you store role in token/state
-  const isEvaluator = typeof window !== "undefined" && localStorage.getItem("role") === "evaluator";
+  const isEvaluator =
+    typeof window !== "undefined" && localStorage.getItem("role") === "evaluator";
 
   async function handleDownload() {
     try {
       setIsDownloading(true);
-      // simple JSON download (replace with your PDF export endpoint if needed)
-      const blob = new Blob([JSON.stringify(app ?? {}, null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(app ?? {}, null, 2)], {
+        type: "application/json",
+      });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `application-${app?.id ?? "export"}.json`;
+      a.download = `application-${appId || "export"}.json`;
       a.click();
       URL.revokeObjectURL(a.href);
     } finally {
@@ -106,7 +142,13 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
       criteria_score: Number(v.score ?? 0),
       comment: v.comment ?? "",
     }));
-    await saveScores(String(app?.id ?? app?.application_id ?? ""), { scores: payload });
+
+    if (!appId) {
+      alert("Cannot save scores: missing application id.");
+      return;
+    }
+
+    await saveScores(appId, { scores: payload });
     alert("Scores saved.");
   }
 
@@ -142,6 +184,24 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
             >
               Scores By Evaluators
             </button>
+
+            {/*** >>> CHANGED: link directly to /score ***/}
+            <Link
+  href={{
+    pathname: '/score',
+    query: {
+      slug,               // challenge slug (optional, used for Back link)
+      id: appId,          // REQUIRED
+      edition_id,         // optional
+      round_id            // optional
+    },
+  }}
+  className="btn btn-primary"
+>
+  Go to Scoring
+</Link>
+            {/*** <<< CHANGED ***/}
+
             <button className="btn btn-primary" onClick={handleDownload}>
               Download
             </button>
@@ -174,18 +234,23 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
               src={companyImg}
               alt="Company"
               className="w-full h-64 object-cover rounded-xl border"
-              onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/placeholder.svg")}
+              onError={(e) =>
+                ((e.currentTarget as HTMLImageElement).src = "/placeholder.svg")
+              }
             />
           </div>
 
           <ul className="list-disc pl-5 space-y-3">
             {companyKeys.map((k) => (
               <li key={k} className="leading-relaxed">
-                <span className="font-semibold">{formatLabel(k)}</span>: {String(company[k])}
+                <span className="font-semibold">{formatLabel(k)}</span>:{" "}
+                {String(company[k])}
               </li>
             ))}
 
-            {companyKeys.length === 0 && <li className="text-slate-500">No company profile fields.</li>}
+            {companyKeys.length === 0 && (
+              <li className="text-slate-500">No company profile fields.</li>
+            )}
           </ul>
         </div>
       </div>
@@ -200,15 +265,20 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
               src={memberImg}
               alt="Member"
               className="h-40 w-40 object-cover rounded-xl border"
-              onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/placeholder.svg")}
+              onError={(e) =>
+                ((e.currentTarget as HTMLImageElement).src = "/placeholder.svg")
+              }
             />
             <ul className="list-disc pl-5 space-y-3">
               {managementKeys.map((k) => (
                 <li key={k}>
-                  <span className="font-semibold">{formatLabel(k)}</span>: {String(management[k])}
+                  <span className="font-semibold">{formatLabel(k)}</span>:{" "}
+                  {String(management[k])}
                 </li>
               ))}
-              {managementKeys.length === 0 && <li className="text-slate-500">No management fields.</li>}
+              {managementKeys.length === 0 && (
+                <li className="text-slate-500">No management fields.</li>
+              )}
             </ul>
           </div>
         </div>
@@ -222,7 +292,9 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
           Object.keys(step3).map((key) => (
             <div key={key} className="space-y-1">
               <h4 className="font-semibold">{formatLabel(key)}</h4>
-              <p className="text-slate-700 whitespace-pre-wrap">{String(step3[key] ?? "—")}</p>
+              <p className="text-slate-700 whitespace-pre-wrap">
+                {String(step3[key] ?? "—")}
+              </p>
             </div>
           ))
         )}
@@ -240,7 +312,12 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
               <div key={k} className="rounded-lg border p-4 bg-slate-50">
                 <h4 className="font-semibold mb-1">{formatLabel(k)}</h4>
                 {isUrl(v) ? (
-                  <a className="text-blue-600 underline break-all" href={String(v)} target="_blank" rel="noreferrer">
+                  <a
+                    className="text-blue-600 underline break-all"
+                    href={String(v)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     Click here
                   </a>
                 ) : (
@@ -296,7 +373,7 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
 
           <div className="space-y-6">
             {criteria?.length ? (
-              criteria.map((c, i) => {
+              criteria.map((c) => {
                 const entry = scores[c.id] || {};
                 const weight = Number(c.weightage ?? 0);
                 const valueNum = Number(entry.score ?? "");
@@ -314,7 +391,10 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
                           type="number"
                           value={entry.score ?? ""}
                           onChange={(e) =>
-                            setScores((s) => ({ ...s, [c.id]: { ...s[c.id], score: e.target.value } }))
+                            setScores((s) => ({
+                              ...s,
+                              [c.id]: { ...s[c.id], score: e.target.value },
+                            }))
                           }
                           min={0}
                           max={outOf ?? undefined}
@@ -328,11 +408,16 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
                         placeholder="Enter remarks"
                         value={entry.comment ?? ""}
                         onChange={(e) =>
-                          setScores((s) => ({ ...s, [c.id]: { ...s[c.id], comment: e.target.value } }))
+                          setScores((s) => ({
+                            ...s,
+                            [c.id]: { ...s[c.id], comment: e.target.value },
+                          }))
                         }
                       />
                       {outOf !== undefined && valueNum > outOf && (
-                        <p className="text-sm text-red-600">Score must be ≤ {outOf}</p>
+                        <p className="text-sm text-red-600">
+                          Score must be ≤ {outOf}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -355,7 +440,10 @@ export default function ApplicationView({ slug, app, criteria, evaluatorScores }
       )}
 
       <div>
-        <Link className="inline-flex items-center gap-2 text-sm font-medium hover:underline" href={`/challenge/${slug}/startups`}>
+        <Link
+          className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
+          href={`/challenge/${encodeURIComponent(slug)}/startups`}
+        >
           ← Back to Applications
         </Link>
       </div>

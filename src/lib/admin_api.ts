@@ -95,12 +95,20 @@ export async function listEvaluatorEditions() {
 
 /** Rounds visible to the evaluator for a given edition */
 export async function listEvaluatorRounds(editionId: string) {
-  const res = await adminFetch(
-    `/evaluator/rounds?edition_id=${encodeURIComponent(editionId)}`
-  );
-  return toArray(res);
-}
+  // Guard: nothing to query
+  if (!editionId || !String(editionId).trim()) return [];
 
+  try {
+    const res = await adminFetch(
+      `/evaluator/rounds?edition_id=${encodeURIComponent(editionId)}`
+    );
+    return Array.isArray(res) ? res : res?.results ?? [];
+  } catch (err) {
+    console.warn("[admin_api] rounds failed for edition:", editionId, err);
+    // Don't crash a page render because one edition isn't wired yet
+    return [];
+  }
+}
 /** Applications assigned in a given round */
 export async function listEvaluatorApplications(roundId: string) {
   const res = await adminFetch(
